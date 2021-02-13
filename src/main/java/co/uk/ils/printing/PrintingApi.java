@@ -64,6 +64,7 @@ public class PrintingApi {
         attributes.add(MediaSizeName.ISO_A4);
 
         textPane.setText("test text string - Hello World! Are you there?");
+        textPane.setMargin(new Insets(1, 1, 1, 1));
 
         textPane.print(null, null, true, PrintServiceLookup.lookupDefaultPrintService(), attributes, true);
 
