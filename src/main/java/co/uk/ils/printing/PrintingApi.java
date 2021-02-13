@@ -1,33 +1,26 @@
 package co.uk.ils.printing;
 
+import net.sourceforge.barbecue.Barcode;
 import net.sourceforge.barbecue.BarcodeException;
-import org.fintrace.core.drivers.tspl.commands.label.DataMatrix;
-import org.fintrace.core.drivers.tspl.commands.label.TSPLLabel;
-import org.fintrace.core.drivers.tspl.commands.system.*;
-import org.fintrace.core.drivers.tspl.connection.EthernetConnectionClient;
-import org.fintrace.core.drivers.tspl.connection.TSPLConnectionClient;
+import net.sourceforge.barbecue.BarcodeFactory;
+import net.sourceforge.barbecue.BarcodeImageHandler;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import javax.print.*;
-import javax.print.attribute.HashPrintRequestAttributeSet;
-import javax.print.attribute.PrintRequestAttributeSet;
-import javax.print.attribute.Size2DSyntax;
-import javax.print.attribute.standard.MediaPrintableArea;
 import java.awt.*;
-import java.awt.print.*;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-
+import java.awt.geom.Rectangle2D;
+import java.awt.print.PageFormat;
+import java.awt.print.Paper;
+import java.awt.print.Printable;
+import java.awt.print.PrinterException;
+import java.awt.print.PrinterJob;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
 @Controller
 public class PrintingApi {
     @RequestMapping(path = "/print", method = GET)
-    public ResponseEntity<String> print() throws PrintException, PrinterException, BarcodeException, IOException, InterruptedException {
+    public ResponseEntity<String> print() throws PrinterException, BarcodeException {
         String label = "JOSIE CAMPBELL\n"
                 + "FOXHOLLOW\n"
                 + "STOKE HILL, CHEW STOKE\n"
@@ -38,41 +31,81 @@ public class PrintingApi {
                 + "Return Address: \n"
                 + "I.L.S Schools, Unit 2 Sovereign Park, Laporte Way, Luton, Beds, LU4 8EL";
 
+        Barcode barcode = BarcodeFactory.create2of7(label);
+        barcode.setBarHeight(60);
+        barcode.setBarWidth(2);
+
+        PrinterJob job = PrinterJob.getPrinterJob();
+        job.setPrintable(barcode);
+        job.print();
         return ResponseEntity.ok("ok");
     }
 
     public static void print(final String text) {
-        final PrinterJob job = PrinterJob.getPrinterJob();
+        PrinterJob printerJob = PrinterJob.getPrinterJob();
+        if (printerJob.printDialog()) {
+            PageFormat pageFormat = printerJob.defaultPage();
+            Paper paper = pageFormat.getPaper();
 
-        Printable contentToPrint = new Printable() {
-            @Override
-            public int print(Graphics graphics, PageFormat pageFormat, int pageIndex) throws PrinterException {
-                Graphics2D g2d = (Graphics2D) graphics;
-                g2d.translate(pageFormat.getImageableX(), pageFormat.getImageableY());
-                g2d.setFont(new Font("Monospaced", Font.BOLD, 7));
-                pageFormat.setOrientation(PageFormat.PORTRAIT);
+            double width = fromCMToPPI(1.9);
+            double height = fromCMToPPI(4.5);
 
-                Paper pPaper = pageFormat.getPaper();
-                pPaper.setImageableArea(0, 0, pPaper.getWidth(), pPaper.getHeight() - 2);
-                pageFormat.setPaper(pPaper);
+            double horizontalMargin = fromCMToPPI(0.25);
+            double verticalMargin = fromCMToPPI(0.1);
 
-                if (pageIndex > 0)
-                    return NO_SUCH_PAGE; //Only one page
+            paper.setSize(width, height);
 
-                g2d.drawString(text, 0, 0);
+            paper.setImageableArea(
+                    horizontalMargin,
+                    verticalMargin,
+                    width,
+                    height);
 
-                return PAGE_EXISTS;
+            pageFormat.setOrientation(PageFormat.REVERSE_LANDSCAPE);
+            pageFormat.setPaper(paper);
+
+            printerJob.setPrintable(new MyPrintable(), pageFormat);
+            try {
+                printerJob.print();
+            } catch (PrinterException ex) {
+                ex.printStackTrace();
             }
-        };
+        }
+    }
 
-        boolean don = job.printDialog();
+    private static double fromCMToPPI(double cm) {
+        return toPPI(cm * 0.393700787);
+    }
 
-        job.setPrintable(contentToPrint);
+    private static double toPPI(double inch) {
+        return inch * 72d;
+    }
 
-        try {
-            job.print();
-        } catch (PrinterException e) {
-            System.err.println(e.getMessage());
+    public static class MyPrintable implements Printable {
+
+        @Override
+        public int print(Graphics graphics, PageFormat pageFormat,
+                         int pageIndex) {
+            System.out.println(pageIndex);
+            int result = NO_SUCH_PAGE;
+            if (pageIndex < 1) {
+                Graphics2D g2d = (Graphics2D) graphics;
+
+                double width = pageFormat.getImageableWidth();
+                double height = pageFormat.getImageableHeight();
+                double x = pageFormat.getImageableX();
+                double y = pageFormat.getImageableY();
+
+                System.out.println("x = " + x);
+                System.out.println("y = " + y);
+
+                g2d.translate((int) pageFormat.getImageableX(), (int) pageFormat.getImageableY());
+                g2d.draw(new Rectangle2D.Double(x, y, width - x, height - y));
+                FontMetrics fm = g2d.getFontMetrics();
+                g2d.drawString("AxB", Math.round(x), fm.getAscent());
+                result = PAGE_EXISTS;
+            }
+            return result;
         }
     }
 
