@@ -15,7 +15,8 @@ import javax.print.attribute.HashPrintRequestAttributeSet;
 import javax.print.attribute.PrintRequestAttributeSet;
 import javax.print.attribute.Size2DSyntax;
 import javax.print.attribute.standard.MediaPrintableArea;
-import java.awt.print.PrinterException;
+import java.awt.*;
+import java.awt.print.*;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,41 +38,61 @@ public class PrintingApi {
                 + "Return Address: \n"
                 + "I.L.S Schools, Unit 2 Sovereign Park, Laporte Way, Luton, Beds, LU4 8EL";
 
-        DocFlavor flavor = DocFlavor.INPUT_STREAM.AUTOSENSE;
-
-        StringBuilder builder = new StringBuilder();
-        builder.append(label);
-        builder.append(EscapeCodeUtil.createEscapeCode(10));
-
-        PrintRequestAttributeSet aset= new HashPrintRequestAttributeSet();
-        aset.add(new MediaPrintableArea(100,400,210,160, Size2DSyntax.MM));
-
-
-        InputStream is = new ByteArrayInputStream(builder.toString().getBytes(StandardCharsets.UTF_8));
-
-        Doc mydoc = new SimpleDoc(is, flavor, null);
-
-        PrintService defaultService = PrintServiceLookup.lookupDefaultPrintService();
-
-        DocPrintJob job = defaultService.createPrintJob();
-        job.print(mydoc, aset);
-
         return ResponseEntity.ok("ok");
+    }
+
+    public static void print(final String text) {
+        final PrinterJob job = PrinterJob.getPrinterJob();
+
+        Printable contentToPrint = new Printable() {
+            @Override
+            public int print(Graphics graphics, PageFormat pageFormat, int pageIndex) throws PrinterException {
+                Graphics2D g2d = (Graphics2D) graphics;
+                g2d.translate(pageFormat.getImageableX(), pageFormat.getImageableY());
+                g2d.setFont(new Font("Monospaced", Font.BOLD, 7));
+                pageFormat.setOrientation(PageFormat.PORTRAIT);
+
+                Paper pPaper = pageFormat.getPaper();
+                pPaper.setImageableArea(0, 0, pPaper.getWidth(), pPaper.getHeight() - 2);
+                pageFormat.setPaper(pPaper);
+
+                if (pageIndex > 0)
+                    return NO_SUCH_PAGE; //Only one page
+
+                g2d.drawString(text, 0, 0);
+
+                return PAGE_EXISTS;
+            }
+        };
+
+        boolean don = job.printDialog();
+
+        job.setPrintable(contentToPrint);
+
+        try {
+            job.print();
+        } catch (PrinterException e) {
+            System.err.println(e.getMessage());
+        }
+    }
+
+    public static void main(String[] args) {
+        String label = "JOSIE CAMPBELL\n"
+                + "FOXHOLLOW\n"
+                + "STOKE HILL, CHEW STOKE\n"
+                + "BRISTOL\n"
+                + "AVON\n"
+                + "BS40 8XG\n"
+                + "\n"
+                + "Return Address: \n"
+                + "I.L.S Schools, Unit 2 Sovereign Park, Laporte Way, Luton, Beds, LU4 8EL";
+
+        print(label);
     }
     @RequestMapping(path = "/health", method = GET)
     public ResponseEntity<String> health() {
         return ResponseEntity.ok("ok");
     }
 
-    static class EscapeCodeUtil {
-        public static String createEscapeCode(int ... codes)
-        {
-            StringBuilder sb = new StringBuilder();
 
-            for(int code : codes)
-                sb.append((char) code);
-
-            return sb.toString();
-        }
-    }
 }
