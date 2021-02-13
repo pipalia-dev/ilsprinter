@@ -11,8 +11,15 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import javax.print.*;
+import javax.print.attribute.HashPrintRequestAttributeSet;
+import javax.print.attribute.PrintRequestAttributeSet;
+import javax.print.attribute.Size2DSyntax;
+import javax.print.attribute.standard.MediaPrintableArea;
 import java.awt.print.PrinterException;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
@@ -30,12 +37,24 @@ public class PrintingApi {
                 + "Return Address: \n"
                 + "I.L.S Schools, Unit 2 Sovereign Park, Laporte Way, Luton, Beds, LU4 8EL";
 
-        PrintService pservice = PrintServiceLookup.lookupDefaultPrintService();
-        DocPrintJob job = pservice.createPrintJob();
-        String commands = "^XA\n\r^MNM\n\r^FO050,50\n\r^B8N,100,Y,N\n\r^FD1234567\n\r^FS\n\r^PQ3\n\r^XZ";
-        DocFlavor flavor = DocFlavor.BYTE_ARRAY.AUTOSENSE;
-        Doc doc = new SimpleDoc(commands.getBytes(), flavor, null);
-        job.print(doc, null);
+        DocFlavor flavor = DocFlavor.INPUT_STREAM.AUTOSENSE;
+
+        StringBuilder builder = new StringBuilder();
+        builder.append(label);
+        builder.append(EscapeCodeUtil.createEscapeCode(10));
+
+        PrintRequestAttributeSet aset= new HashPrintRequestAttributeSet();
+        aset.add(new MediaPrintableArea(100,400,210,160, Size2DSyntax.MM));
+
+
+        InputStream is = new ByteArrayInputStream(builder.toString().getBytes(StandardCharsets.UTF_8));
+
+        Doc mydoc = new SimpleDoc(is, flavor, null);
+
+        PrintService defaultService = PrintServiceLookup.lookupDefaultPrintService();
+
+        DocPrintJob job = defaultService.createPrintJob();
+        job.print(mydoc, aset);
 
         return ResponseEntity.ok("ok");
     }
@@ -44,22 +63,15 @@ public class PrintingApi {
         return ResponseEntity.ok("ok");
     }
 
-    private static boolean feedPrinter(byte[] b) {
-        try {
-            DocPrintJob job = PrintServiceLookup.lookupDefaultPrintService().createPrintJob();
-            DocFlavor flavor = DocFlavor.BYTE_ARRAY.AUTOSENSE;
-            Doc doc = new SimpleDoc(b, flavor, null);
+    static class EscapeCodeUtil {
+        public static String createEscapeCode(int ... codes)
+        {
+            StringBuilder sb = new StringBuilder();
 
-            job.print(doc, null);
-            Thread.sleep(1000);
-            System.out.println("Done !");
-        } catch (javax.print.PrintException pex) {
-            System.out.println("Printer Error " + pex.getMessage());
-            return false;
-        } catch(Exception e) {
-            e.printStackTrace();
-            return false;
+            for(int code : codes)
+                sb.append((char) code);
+
+            return sb.toString();
         }
-        return true;
     }
 }
