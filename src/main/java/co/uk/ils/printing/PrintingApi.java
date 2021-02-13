@@ -1,5 +1,6 @@
 package co.uk.ils.printing;
 
+import com.github.anastaciocintra.escpos.EscPos;
 import net.sourceforge.barbecue.Barcode;
 import net.sourceforge.barbecue.BarcodeException;
 import net.sourceforge.barbecue.BarcodeFactory;
@@ -13,6 +14,7 @@ import javax.print.attribute.HashPrintServiceAttributeSet;
 import javax.print.attribute.standard.PrinterName;
 import java.awt.*;
 import java.awt.print.*;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 
@@ -21,7 +23,7 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 @Controller
 public class PrintingApi {
     @RequestMapping(path = "/print", method = GET)
-    public ResponseEntity<String> print() throws PrintException, PrinterException, BarcodeException {
+    public ResponseEntity<String> print() throws PrintException, PrinterException, BarcodeException, IOException {
         String label = "JOSIE CAMPBELL\n"
                 + "FOXHOLLOW\n"
                 + "STOKE HILL, CHEW STOKE\n"
@@ -32,7 +34,11 @@ public class PrintingApi {
                 + "Return Address: \n"
                 + "I.L.S Schools, Unit 2 Sovereign Park, Laporte Way, Luton, Beds, LU4 8EL";
 
-        feedPrinter(label.getBytes(StandardCharsets.UTF_8));
+        EscPos escpos = new EscPos(System.out);
+        escpos.writeLF("Hello Wold");
+        escpos.feed(5);
+        escpos.cut(EscPos.CutMode.FULL);
+        escpos.close();
         return ResponseEntity.ok("ok");
     }
 
@@ -50,25 +56,24 @@ public class PrintingApi {
 
         final PrinterJob job = PrinterJob.getPrinterJob();
 
-        Printable contentToPrint = new Printable() {
-            @Override
-            public int print(Graphics graphics, PageFormat pageFormat, int pageIndex) throws PrinterException {
-                Graphics2D g2d = (Graphics2D) graphics;
-                g2d.translate(pageFormat.getImageableX(), pageFormat.getImageableY());
-                g2d.setFont(new Font("Monospaced", Font.BOLD, 7));
+        Printable contentToPrint = (graphics, pageFormat, pageIndex) -> {
+            Graphics2D g2d = (Graphics2D) graphics;
+            g2d.translate(pageFormat.getImageableX(), pageFormat.getImageableY());
+            g2d.setFont(new Font("Monospaced", Font.BOLD, 7));
 
-                if (pageIndex > 0) {
-                    return NO_SUCH_PAGE;
-                } //Only one page
+            if (pageIndex > 0) {
+                return Printable.NO_SUCH_PAGE;
+            } //Only one page
 
-                g2d.drawString(label, 0, 0);
+            g2d.drawString(label, 0, 0);
 
-                return PAGE_EXISTS;
-            }
+            return Printable.PAGE_EXISTS;
         };
 
+        boolean don = job.printDialog();
+
         PageFormat pageFormat = new PageFormat();
-        pageFormat.setOrientation(PageFormat.PORTRAIT);
+        pageFormat.setOrientation(PageFormat.LANDSCAPE);
 
         Paper pPaper = pageFormat.getPaper();
         pPaper.setImageableArea(0, 0, pPaper.getWidth() , pPaper.getHeight() -2);
