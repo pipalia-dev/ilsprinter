@@ -1,29 +1,25 @@
 package co.uk.ils.printing;
 
-import com.github.anastaciocintra.escpos.EscPos;
-import net.sourceforge.barbecue.Barcode;
 import net.sourceforge.barbecue.BarcodeException;
-import net.sourceforge.barbecue.BarcodeFactory;
+import org.fintrace.core.drivers.tspl.commands.label.DataMatrix;
+import org.fintrace.core.drivers.tspl.commands.label.TSPLLabel;
+import org.fintrace.core.drivers.tspl.commands.system.*;
+import org.fintrace.core.drivers.tspl.connection.EthernetConnectionClient;
+import org.fintrace.core.drivers.tspl.connection.TSPLConnectionClient;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import javax.print.*;
-import javax.print.attribute.AttributeSet;
-import javax.print.attribute.HashPrintServiceAttributeSet;
-import javax.print.attribute.standard.PrinterName;
-import java.awt.*;
-import java.awt.print.*;
+import java.awt.print.PrinterException;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.nio.charset.StandardCharsets;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
 @Controller
 public class PrintingApi {
     @RequestMapping(path = "/print", method = GET)
-    public ResponseEntity<String> print() throws PrintException, PrinterException, BarcodeException, IOException {
+    public ResponseEntity<String> print() throws PrintException, PrinterException, BarcodeException, IOException, InterruptedException {
         String label = "JOSIE CAMPBELL\n"
                 + "FOXHOLLOW\n"
                 + "STOKE HILL, CHEW STOKE\n"
@@ -34,58 +30,29 @@ public class PrintingApi {
                 + "Return Address: \n"
                 + "I.L.S Schools, Unit 2 Sovereign Park, Laporte Way, Luton, Beds, LU4 8EL";
 
-        EscPos escpos = new EscPos(System.out);
-        escpos.writeLF("Hello Wold");
-        escpos.feed(5);
-        escpos.cut(EscPos.CutMode.FULL);
-        escpos.close();
-        return ResponseEntity.ok("ok");
-    }
+        TSPLConnectionClient tsplConnectionClient = new EthernetConnectionClient("localhost", 5130);
+        tsplConnectionClient.init();
+        tsplConnectionClient.connect();
+        TSPLLabel tsplLabel = TSPLLabel.builder()
+                .element(Size.builder().labelWidth(4f).labelLength(3f).build())
+                .element(Gap.builder().labelDistance(0f).labelOffsetDistance(0f).build())
+                .element(Direction.builder().printPositionAsFeed(Boolean.TRUE).build())
+                .element(ClearBuffer.builder().build())
+                .element(DataMatrix.builder().xCoordinate(10).yCoordinate(110).width(400)
+                        .height(400).content("DMATRIX EXAMPLE 1").build())
+                .element(DataMatrix.builder().xCoordinate(310).yCoordinate(110).width(400)
+                        .height(400).moduleSize(6).content("DMATRIX EXAMPLE 2").build())
+                .element(DataMatrix.builder().xCoordinate(10).yCoordinate(310).width(400)
+                        .height(400).moduleSize(8).nbRows(18).nbCols(18)
+                        .content("DMATRIX EXAMPLE 3").build())
+                .element(Print.builder().nbLabels(1).nbCopies(1).build())
+                .build();
 
-    @RequestMapping(path = "/print2", method = GET)
-    public ResponseEntity<String> print2() throws PrintException, PrinterException, BarcodeException {
-        String label = "JOSIE CAMPBELL\n"
-                + "FOXHOLLOW\n"
-                + "STOKE HILL, CHEW STOKE\n"
-                + "BRISTOL\n"
-                + "AVON\n"
-                + "BS40 8XG\n"
-                + "\n"
-                + "Return Address: \n"
-                + "I.L.S Schools, Unit 2 Sovereign Park, Laporte Way, Luton, Beds, LU4 8EL";
+        tsplConnectionClient.send(tsplLabel);
 
-        final PrinterJob job = PrinterJob.getPrinterJob();
-
-        Printable contentToPrint = (graphics, pageFormat, pageIndex) -> {
-            Graphics2D g2d = (Graphics2D) graphics;
-            g2d.translate(pageFormat.getImageableX(), pageFormat.getImageableY());
-            g2d.setFont(new Font("Monospaced", Font.BOLD, 7));
-
-            if (pageIndex > 0) {
-                return Printable.NO_SUCH_PAGE;
-            } //Only one page
-
-            g2d.drawString(label, 0, 0);
-
-            return Printable.PAGE_EXISTS;
-        };
-
-        boolean don = job.printDialog();
-
-        PageFormat pageFormat = new PageFormat();
-        pageFormat.setOrientation(PageFormat.LANDSCAPE);
-
-        Paper pPaper = pageFormat.getPaper();
-        pPaper.setImageableArea(0, 0, pPaper.getWidth() , pPaper.getHeight() -2);
-        pageFormat.setPaper(pPaper);
-
-        job.setPrintable(contentToPrint, pageFormat);
-
-        try {
-            job.print();
-        } catch (PrinterException e) {
-            System.err.println(e.getMessage());
-        }
+        Thread.sleep(2000);
+        tsplConnectionClient.disconnect();
+        tsplConnectionClient.shutdown();
 
         return ResponseEntity.ok("ok");
     }

@@ -13,7 +13,7 @@ repositories {
 
 dependencies {
     compile 'org.springframework.boot:spring-boot-starter-web:2.4.0'
-    compile 'com.github.anastaciocintra:escpos-coffee:4.0.1'
+    compile 'org.fintrace.core.drivers:tspl2-driver:0.0.11'
     compile group: 'net.sourceforge.barbecue', name: 'barbecue', version: '1.5-beta1'
 }
 
