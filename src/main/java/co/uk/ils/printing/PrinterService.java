@@ -1,126 +1,87 @@
 package co.uk.ils.printing;
 
-import java.awt.Font;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.print.PageFormat;
-import java.awt.print.Printable;
-import java.awt.print.PrinterException;
-import java.util.ArrayList;
-import java.util.List;
-
 import javax.print.Doc;
 import javax.print.DocFlavor;
 import javax.print.DocPrintJob;
+import javax.print.PrintException;
 import javax.print.PrintService;
 import javax.print.PrintServiceLookup;
 import javax.print.SimpleDoc;
 import javax.print.attribute.HashPrintRequestAttributeSet;
 import javax.print.attribute.PrintRequestAttributeSet;
+import javax.print.attribute.standard.Copies;
+import javax.print.event.PrintJobAdapter;
+import javax.print.event.PrintJobEvent;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
-public class PrinterService implements Printable {
-
-    public List<String> getPrinters() {
-
-        DocFlavor flavor = DocFlavor.BYTE_ARRAY.AUTOSENSE;
-        PrintRequestAttributeSet pras = new HashPrintRequestAttributeSet();
-
-        PrintService[] printServices = PrintServiceLookup.lookupPrintServices(
-                flavor, pras);
-
-        List<String> printerList = new ArrayList<>();
-        for (PrintService printerService : printServices) {
-            printerList.add(printerService.getName());
-        }
-
-        return printerList;
-    }
+public class PrinterService  {
 
     @SuppressWarnings("checkstyle:MagicNumber")
-    @Override
-    public int print(Graphics g, PageFormat pf, int page)
-            throws PrinterException {
-        if (page > 0) { /* We have only one page, and 'page' is zero-based */
-            return NO_SUCH_PAGE;
-        }
+    public void printString(String text) throws PrintException {
+        String defaultPrinter = PrintServiceLookup.lookupDefaultPrintService().getName();
+        System.out.println("Default printer: " + defaultPrinter);
+        PrintService service = PrintServiceLookup.lookupDefaultPrintService();
 
-        /*
-         * User (0,0) is typically outside the imageable area, so we must
-         * translate by the X and Y values in the PageFormat to avoid clipping
-         */
-        Graphics2D g2d = (Graphics2D) g;
-        g2d.translate(pf.getImageableX(), pf.getImageableY());
-        /* Now we perform our rendering */
+        try (InputStream is = new ByteArrayInputStream(text.getBytes(StandardCharsets.UTF_8))) {
+            PrintRequestAttributeSet pras = new HashPrintRequestAttributeSet();
+            pras.add(new Copies(1));
 
-        g.setFont(new Font("Roman", 0, 8));
-        g.drawString("Hello world !", 0, 10);
+            DocFlavor flavor = DocFlavor.INPUT_STREAM.AUTOSENSE;
+            Doc doc = new SimpleDoc(is, flavor, null);
+            DocPrintJob job = service.createPrintJob();
 
-        return PAGE_EXISTS;
-    }
-
-    @SuppressWarnings("checkstyle:MagicNumber")
-    public void printString(String printerName, String text) {
-
-        // find the printService of name printerName
-        DocFlavor flavor = DocFlavor.BYTE_ARRAY.AUTOSENSE;
-        PrintRequestAttributeSet pras = new HashPrintRequestAttributeSet();
-
-        PrintService[] printService = PrintServiceLookup.lookupPrintServices(
-                flavor, pras);
-        PrintService service = findPrintService(printerName, printService);
-
-        DocPrintJob job = service.createPrintJob();
-
-        try {
-
-            byte[] bytes;
-
-            // important for umlaut chars
-            bytes = text.getBytes("CP437");
-
-            Doc doc = new SimpleDoc(bytes, flavor, null);
-
-
-            job.print(doc, null);
-
-        } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-
-    }
-
-    public void printBytes(String printerName, byte[] bytes) {
-
-        DocFlavor flavor = DocFlavor.BYTE_ARRAY.AUTOSENSE;
-        PrintRequestAttributeSet pras = new HashPrintRequestAttributeSet();
-
-        PrintService[] printService = PrintServiceLookup.lookupPrintServices(
-                flavor, pras);
-        PrintService service = findPrintService(printerName, printService);
-
-        DocPrintJob job = service.createPrintJob();
-
-        try {
-
-            Doc doc = new SimpleDoc(bytes, flavor, null);
-
-            job.print(doc, null);
-
-        } catch (Exception e) {
+            PrintJobWatcher pjw = new PrintJobWatcher(job);
+            job.print(doc, pras);
+            pjw.waitForDone();
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private PrintService findPrintService(String printerName,
-                                          PrintService[] services) {
-        for (PrintService service : services) {
-            if (service.getName().equalsIgnoreCase(printerName)) {
-                return service;
+    static class PrintJobWatcher {
+        boolean done = false;
+
+        PrintJobWatcher(DocPrintJob job) {
+            job.addPrintJobListener(new PrintJobAdapter() {
+                public void printJobCanceled(PrintJobEvent pje) {
+                    allDone();
+                }
+
+                public void printJobCompleted(PrintJobEvent pje) {
+                    allDone();
+                }
+
+                public void printJobFailed(PrintJobEvent pje) {
+                    allDone();
+                }
+
+                public void printJobNoMoreEvents(PrintJobEvent pje) {
+                    allDone();
+                }
+
+                void allDone() {
+                    synchronized (PrintJobWatcher.this) {
+                        done = true;
+                        System.out.println("Printing done ...");
+                        PrintJobWatcher.this.notify();
+                    }
+                }
+            });
+        }
+
+        public synchronized void waitForDone() {
+            try {
+                while (!done) {
+                    wait();
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
-
-        return null;
     }
+
 }
 
