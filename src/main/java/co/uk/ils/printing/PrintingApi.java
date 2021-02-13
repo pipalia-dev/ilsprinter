@@ -30,29 +30,12 @@ public class PrintingApi {
                 + "Return Address: \n"
                 + "I.L.S Schools, Unit 2 Sovereign Park, Laporte Way, Luton, Beds, LU4 8EL";
 
-        TSPLConnectionClient tsplConnectionClient = new EthernetConnectionClient("localhost", 5130);
-        tsplConnectionClient.init();
-        tsplConnectionClient.connect();
-        TSPLLabel tsplLabel = TSPLLabel.builder()
-                .element(Size.builder().labelWidth(4f).labelLength(3f).build())
-                .element(Gap.builder().labelDistance(0f).labelOffsetDistance(0f).build())
-                .element(Direction.builder().printPositionAsFeed(Boolean.TRUE).build())
-                .element(ClearBuffer.builder().build())
-                .element(DataMatrix.builder().xCoordinate(10).yCoordinate(110).width(400)
-                        .height(400).content("DMATRIX EXAMPLE 1").build())
-                .element(DataMatrix.builder().xCoordinate(310).yCoordinate(110).width(400)
-                        .height(400).moduleSize(6).content("DMATRIX EXAMPLE 2").build())
-                .element(DataMatrix.builder().xCoordinate(10).yCoordinate(310).width(400)
-                        .height(400).moduleSize(8).nbRows(18).nbCols(18)
-                        .content("DMATRIX EXAMPLE 3").build())
-                .element(Print.builder().nbLabels(1).nbCopies(1).build())
-                .build();
-
-        tsplConnectionClient.send(tsplLabel);
-
-        Thread.sleep(2000);
-        tsplConnectionClient.disconnect();
-        tsplConnectionClient.shutdown();
+        PrintService pservice = PrintServiceLookup.lookupDefaultPrintService();
+        DocPrintJob job = pservice.createPrintJob();
+        String commands = "^XA\n\r^MNM\n\r^FO050,50\n\r^B8N,100,Y,N\n\r^FD1234567\n\r^FS\n\r^PQ3\n\r^XZ";
+        DocFlavor flavor = DocFlavor.BYTE_ARRAY.AUTOSENSE;
+        Doc doc = new SimpleDoc(commands.getBytes(), flavor, null);
+        job.print(doc, null);
 
         return ResponseEntity.ok("ok");
     }
