@@ -11,7 +11,7 @@ import javax.print.attribute.Size2DSyntax;
 import javax.print.attribute.standard.MediaPrintableArea;
 import javax.print.attribute.standard.OrientationRequested;
 import javax.swing.JTextPane;
-import java.awt.Font;
+import javax.swing.text.*;
 import java.awt.Insets;
 import java.awt.print.PrinterException;
 import java.util.ArrayList;
@@ -36,25 +36,24 @@ public class PrintingApi {
         smallText.add("Return Address: \n");
         smallText.add("I.L.S Schools, Unit 2 Sovereign Park, Laporte Way, Luton, Beds, LU4 8EL");
 
-        JTextPane textPane = new JTextPane();
-
-        textPane.setFont(new Font(Font.SANS_SERIF, 3, 9));
-        textPane.setText(toString(bigFontText));
-
-        textPane.setFont(new Font(Font.SANS_SERIF, 3, 9));
-
-        PrintRequestAttributeSet attributes = new HashPrintRequestAttributeSet();
-
-        attributes.add(OrientationRequested.LANDSCAPE);
-
-        attributes.add(new MediaPrintableArea(0,0,50, 97, Size2DSyntax.MM));
-
-        textPane.setMargin(new Insets(20, 20, 20, 20));
-
         try {
+            JTextPane textPane = new JTextPane();
+
+            Document document = textPane.getDocument();
+            document.insertString(document.getLength(), toString(bigFontText), getFont(16));
+            textPane.setText(toString(bigFontText));
+
+            document.insertString(document.getLength(), toString(bigFontText), getFont(10));
+            textPane.setText(toString(smallText));
+
+            PrintRequestAttributeSet attributes = new HashPrintRequestAttributeSet();
+            attributes.add(OrientationRequested.LANDSCAPE);
+            attributes.add(new MediaPrintableArea(0,0,50, 97, Size2DSyntax.MM));
+            textPane.setMargin(new Insets(20, 20, 20, 20));
+
             textPane.print(null, null, true, PrintServiceLookup.lookupDefaultPrintService(), attributes, true);
             return ResponseEntity.ok("Printed");
-        } catch (PrinterException e) {
+        } catch (PrinterException | BadLocationException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
     }
@@ -66,5 +65,15 @@ public class PrintingApi {
         }
         return result.toString();
     }
+
+    public static SimpleAttributeSet getFont(int size)
+    {
+        SimpleAttributeSet result = new SimpleAttributeSet();
+        StyleConstants.setFontFamily(result, "SansSerif");
+        StyleConstants.setFontSize(result, size);
+
+        return result;
+    }
+
 
 }
