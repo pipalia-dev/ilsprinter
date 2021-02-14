@@ -3,6 +3,7 @@ package co.uk.ils.printing;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import javax.print.PrintServiceLookup;
@@ -47,6 +48,7 @@ public class PrintingApi {
         return ResponseEntity.ok("Printed");
     }
 
+    @CrossOrigin
     @RequestMapping(path = "/print", method = POST)
     public ResponseEntity<String> print(@RequestBody List<PrintingData> dtos) {
         try {
