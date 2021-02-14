@@ -11,7 +11,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import javax.print.PrintServiceLookup;
 import javax.print.attribute.HashPrintRequestAttributeSet;
 import javax.print.attribute.PrintRequestAttributeSet;
+import javax.print.attribute.Size2DSyntax;
+import javax.print.attribute.standard.MediaPrintableArea;
 import javax.print.attribute.standard.MediaSizeName;
+import javax.print.attribute.standard.OrientationRequested;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.geom.Rectangle2D;
@@ -60,11 +63,18 @@ public class PrintingApi {
                 + "I.L.S Schools, Unit 2 Sovereign Park, Laporte Way, Luton, Beds, LU4 8EL";
         JTextPane textPane = new JTextPane();
 
-        PrintRequestAttributeSet attributes = new HashPrintRequestAttributeSet();
-        attributes.add(MediaSizeName.ISO_A4);
+        textPane.setFont(new Font(Font.SANS_SERIF, 3, 9));
 
-        textPane.setText("test text string - Hello World! Are you there?");
-        textPane.setMargin(new Insets(1, 1, 1, 1));
+        PrintRequestAttributeSet attributes = new HashPrintRequestAttributeSet();
+
+        attributes.add(OrientationRequested.LANDSCAPE);
+
+        attributes.add(new MediaPrintableArea(0,0,50, 97, Size2DSyntax.MM));
+
+        textPane.setMargin(new Insets(20, 20, 20, 20));
+        //textPane.setText("test text string - Hello World! \n Are you there?");
+        textPane.setText(label);
+
 
         textPane.print(null, null, true, PrintServiceLookup.lookupDefaultPrintService(), attributes, true);
 
