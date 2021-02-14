@@ -39,12 +39,9 @@ public class PrintingApi {
         try {
             JTextPane textPane = new JTextPane();
 
-            Document document = textPane.getDocument();
+            Document document = textPane.getStyledDocument();
             document.insertString(document.getLength(), toString(bigFontText), getFont(16));
-            textPane.setText(toString(bigFontText));
-
-            document.insertString(document.getLength(), toString(bigFontText), getFont(10));
-            textPane.setText(toString(smallText));
+            document.insertString(document.getLength(), toString(smallText), getFont(10));
 
             PrintRequestAttributeSet attributes = new HashPrintRequestAttributeSet();
             attributes.add(OrientationRequested.LANDSCAPE);
