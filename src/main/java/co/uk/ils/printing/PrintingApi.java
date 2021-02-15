@@ -48,6 +48,83 @@ public class PrintingApi {
         return ResponseEntity.ok("Printed");
     }
 
+    @RequestMapping(path = "/test-print1", method = GET)
+    public ResponseEntity<String> testPrint1()  {
+        List<String> bigFontText = new ArrayList<>();
+        bigFontText.add("JOSIE CAMPBELL\n");
+        bigFontText.add("FOXHOLLOW\n");
+        bigFontText.add("STOKE HILL, CHEW STOKE\n");
+        bigFontText.add("BRISTOL\n");
+        bigFontText.add("AVON\n");
+        bigFontText.add("BS40 8XG\n");
+        bigFontText.add("\n");
+
+        List<String> smallFontText = new ArrayList<>();
+        smallFontText.add("Return Address: \n");
+        smallFontText.add("I.L.S Schools, Unit 2 Sovereign Park, Laporte Way, Luton, Beds, LU4 8EL\n");
+
+        try {
+            print(smallFontText, bigFontText);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+        return ResponseEntity.ok("Printed");
+    }
+
+    @RequestMapping(path = "/test-print2", method = GET)
+    public ResponseEntity<String> testPrint2()  {
+        List<String> bigFontText = new ArrayList<>();
+        bigFontText.add("");
+
+        List<String> smallFontText = new ArrayList<>();
+        smallFontText.add("Return Address: \n");
+        smallFontText.add("I.L.S Schools, Unit 2 Sovereign Park, Laporte Way, Luton, Beds, LU4 8EL");
+
+        try {
+            print(bigFontText, smallFontText);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+        return ResponseEntity.ok("Printed");
+    }
+
+    @RequestMapping(path = "/test-print3", method = GET)
+    public ResponseEntity<String> testPrint3()  {
+        List<String> bigFontText = new ArrayList<>();
+        bigFontText.add("");
+
+        List<String> smallFontText = new ArrayList<>();
+        smallFontText.add("Return Address: \n");
+        smallFontText.add("some value\n");
+        smallFontText.add("some other value\n");
+
+        try {
+            print(bigFontText, smallFontText);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+        return ResponseEntity.ok("Printed");
+    }
+
+    @RequestMapping(path = "/test-print4", method = GET)
+    public ResponseEntity<String> testPrint4()  {
+        List<String> bigFontText = new ArrayList<>();
+        bigFontText.add("JOSIE CAMPBELL\n");
+        bigFontText.add("\n");
+
+        List<String> smallFontText = new ArrayList<>();
+        smallFontText.add("Return Address: \n");
+        smallFontText.add("I.L.S Schools, Unit 2 Sovereign Park, Laporte Way, Luton, Beds, LU4 8EL");
+        smallFontText.add("New line at the end. \n");
+
+        try {
+            print(bigFontText, smallFontText);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+        return ResponseEntity.ok("Printed");
+    }
+
     @CrossOrigin
     @RequestMapping(path = "/print", method = POST)
     public ResponseEntity<String> print(@RequestBody List<PrintingData> dtos) {
