@@ -38,7 +38,8 @@ public class PrintingApi {
 
         List<String> smallFontText = new ArrayList<>();
         smallFontText.add("Return Address: \n");
-        smallFontText.add("I.L.S Schools, Unit 2 Sovereign Park, Laporte Way, Luton, Beds, LU4 8EL");
+        smallFontText.add("I.L.S Schools, 78 Park Street, Luton, Bedfordshire, LU1 3EU.\n");
+        smallFontText.add(" - ");
 
         try {
             print(bigFontText, smallFontText);
@@ -143,8 +144,8 @@ public class PrintingApi {
         JTextPane textPane = new JTextPane();
 
         Document document = textPane.getStyledDocument();
-        document.insertString(document.getLength(), toString(bigFontText), getFont(12));
-        document.insertString(document.getLength(), toString(smallFontText), getFont(8));
+        document.insertString(document.getLength(), toString(bigFontText), getFont(11));
+        document.insertString(document.getLength(), toString(smallFontText), getFont(7));
 
         PrintRequestAttributeSet attributes = new HashPrintRequestAttributeSet();
         attributes.add(OrientationRequested.LANDSCAPE);
