@@ -17,114 +17,13 @@ import javax.swing.text.Document;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import java.awt.Insets;
-import java.util.ArrayList;
 import java.util.List;
 
-import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
 @Controller
 public class PrintingApi {
-    @RequestMapping(path = "/test-print", method = GET)
-    public ResponseEntity<String> testPrint()  {
-        List<String> bigFontText = new ArrayList<>();
-        bigFontText.add("JOSIE CAMPBELL\n");
-        bigFontText.add("FOXHOLLOW\n");
-        bigFontText.add("STOKE HILL, CHEW STOKE\n");
-        bigFontText.add("BRISTOL\n");
-        bigFontText.add("AVON\n");
-        bigFontText.add("BS40 8XG\n");
-        bigFontText.add("\n");
-
-        List<String> smallFontText = new ArrayList<>();
-        smallFontText.add("Return Address: \n");
-        smallFontText.add("I.L.S Schools, 78 Park Street, Luton, Bedfordshire, LU1 3EU.\n");
-        smallFontText.add(" - ");
-
-        try {
-            print(bigFontText, smallFontText);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
-        }
-        return ResponseEntity.ok("Printed");
-    }
-
-    @RequestMapping(path = "/test-print1", method = GET)
-    public ResponseEntity<String> testPrint1()  {
-        List<String> bigFontText = new ArrayList<>();
-        bigFontText.add("JOSIE CAMPBELL\n");
-        bigFontText.add("FOXHOLLOW\n");
-        bigFontText.add("STOKE HILL, CHEW STOKE\n");
-        bigFontText.add("BRISTOL\n");
-        bigFontText.add("AVON\n");
-        bigFontText.add("BS40 8XG\n");
-        bigFontText.add("\n");
-
-        List<String> smallFontText = new ArrayList<>();
-        smallFontText.add("Return Address: \n");
-        smallFontText.add("I.L.S Schools, Unit 2 Sovereign Park, Laporte Way, Luton, Beds, LU4 8EL\n");
-
-        try {
-            print(smallFontText, bigFontText);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
-        }
-        return ResponseEntity.ok("Printed");
-    }
-
-    @RequestMapping(path = "/test-print2", method = GET)
-    public ResponseEntity<String> testPrint2()  {
-        List<String> bigFontText = new ArrayList<>();
-        bigFontText.add("");
-
-        List<String> smallFontText = new ArrayList<>();
-        smallFontText.add("Return Address: \n");
-        smallFontText.add("I.L.S Schools, Unit 2 Sovereign Park, Laporte Way, Luton, Beds, LU4 8EL");
-
-        try {
-            print(bigFontText, smallFontText);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
-        }
-        return ResponseEntity.ok("Printed");
-    }
-
-    @RequestMapping(path = "/test-print3", method = GET)
-    public ResponseEntity<String> testPrint3()  {
-        List<String> bigFontText = new ArrayList<>();
-        bigFontText.add("");
-
-        List<String> smallFontText = new ArrayList<>();
-        smallFontText.add("Return Address: \n");
-        smallFontText.add("some value\n");
-        smallFontText.add("some other value\n");
-
-        try {
-            print(bigFontText, smallFontText);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
-        }
-        return ResponseEntity.ok("Printed");
-    }
-
-    @RequestMapping(path = "/test-print4", method = GET)
-    public ResponseEntity<String> testPrint4()  {
-        List<String> bigFontText = new ArrayList<>();
-        bigFontText.add("JOSIE CAMPBELL\n");
-        bigFontText.add("\n");
-
-        List<String> smallFontText = new ArrayList<>();
-        smallFontText.add("Return Address: \n");
-        smallFontText.add("I.L.S Schools, Unit 2 Sovereign Park, Laporte Way, Luton, Beds, LU4 8EL");
-        smallFontText.add("New line at the end. \n");
-
-        try {
-            print(bigFontText, smallFontText);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
-        }
-        return ResponseEntity.ok("Printed");
-    }
+    private static final Integer LINE_SIZE_THRESHOLD = 12;
 
     @CrossOrigin
     @RequestMapping(path = "/print", method = POST)
@@ -144,7 +43,16 @@ public class PrintingApi {
         JTextPane textPane = new JTextPane();
 
         Document document = textPane.getStyledDocument();
-        document.insertString(document.getLength(), toString(bigFontText), getFont(11));
+
+        boolean exceedsLineLimit = false;
+        for (String line : bigFontText) {
+            if (line.length() > LINE_SIZE_THRESHOLD) {
+                exceedsLineLimit = true;
+                break;
+            }
+        }
+
+        document.insertString(document.getLength(), toString(bigFontText), getFont(exceedsLineLimit ? 8 : 11));
         document.insertString(document.getLength(), toString(smallFontText), getFont(7));
 
         PrintRequestAttributeSet attributes = new HashPrintRequestAttributeSet();
@@ -171,6 +79,7 @@ public class PrintingApi {
 
         return result;
     }
+
 
 
 }
