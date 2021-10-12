@@ -1,5 +1,7 @@
 package co.uk.ils.printing;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -24,15 +26,20 @@ import static org.springframework.web.bind.annotation.RequestMethod.POST;
 @Controller
 public class PrintingApi {
     private static final Integer LINE_SIZE_THRESHOLD = 12;
+    private static final Logger LOG = LoggerFactory.getLogger(PrintingApi.class);
 
     @CrossOrigin
     @RequestMapping(path = "/print", method = POST)
     public ResponseEntity<String> print(@RequestBody List<PrintingData> dtos) {
         try {
+            LOG.info("Printing {} dtos start", dtos.size());
             for (PrintingData dto : dtos) {
+                LOG.info("Printing dto {} start", dto);
                 print(dto.bigFontLines, dto.smallFontLines);
+                LOG.info("Printing dto {} end", dto);
             }
 
+            LOG.info("Printing {} dtos end", dtos.size());
             return ResponseEntity.ok("Printed");
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
